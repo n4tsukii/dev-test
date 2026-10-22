@@ -1,18 +1,17 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-[RequireComponent(typeof(CharacterController))]
 public class PlayerMovements : MonoBehaviour
 {
+    [Header("Movement")]
     [SerializeField] private InputActionReference moveAction;
-    [SerializeField, Min(0f)] private float moveSpeed = 5f;
-    [SerializeField, Min(0f)] private float turnSpeed = 720f;
+    [SerializeField] private float moveSpeed = 5f;
+    [SerializeField] private float turnSpeed = 720f;
     [SerializeField] private float gravity = -20f;
+    private float verticalSpeed;
 
     private CharacterController controller;
     private Animator anim;
-    private InputAction movementInput;
-    private float verticalSpeed;
 
     private void Awake()
     {
@@ -22,51 +21,41 @@ public class PlayerMovements : MonoBehaviour
 
     private void OnEnable()
     {
-        if (moveAction == null || moveAction.action == null)
-        {
-            Debug.LogError("Assign Player/Move to Jammo's Move Action.", this);
-            enabled = false;
-            return;
-        }
-
-        // Own this action's lifetime without disabling shared project input.
-        movementInput = moveAction.action.Clone();
-        movementInput.Enable();
-        verticalSpeed = 0f;
+        moveAction.action.Enable();
     }
 
     private void OnDisable()
     {
-        movementInput?.Disable();
-        movementInput?.Dispose();
-        movementInput = null;
-
-        if (anim != null && anim.runtimeAnimatorController != null)
-            anim.SetBool("IsMoving", false);
+        moveAction.action.Disable();
     }
 
     private void Update()
     {
-        Vector2 input = Vector2.ClampMagnitude(movementInput.ReadValue<Vector2>(), 1f);
-        Vector3 direction = new Vector3(input.x, 0f, input.y);
+        Vector2 input = moveAction.action.ReadValue<Vector2>();
+        Vector3 direction = new Vector3(input.x, 0, input.y);
+        if (direction.magnitude > 1)
+            direction.Normalize();
 
-        if (controller.isGrounded && verticalSpeed < 0f)
+        if (controller.isGrounded && verticalSpeed < 0)
             verticalSpeed = -2f;
-
         verticalSpeed += gravity * Time.deltaTime;
-        controller.Move((direction * moveSpeed + Vector3.up * verticalSpeed) * Time.deltaTime);
 
-        if (direction.sqrMagnitude > 0.001f)
+        Vector3 move = direction * moveSpeed;
+        move.y = verticalSpeed;
+        controller.Move(move * Time.deltaTime);
+
+        if (direction != Vector3.zero)
         {
-            Quaternion facing = Quaternion.LookRotation(direction);
-            transform.rotation = Quaternion.RotateTowards(transform.rotation, facing, turnSpeed * Time.deltaTime);
+            Quaternion targetRotation = Quaternion.LookRotation(direction);
+            transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRotation, turnSpeed * Time.deltaTime);
         }
 
-        if (anim != null)
-        {
-            Vector3 horizontalVelocity = controller.velocity;
-            horizontalVelocity.y = 0f;
-            anim.SetBool("IsMoving", horizontalVelocity.sqrMagnitude > 0.01f);
-        }
+        Vector3 flatVelocity = new Vector3(controller.velocity.x, 0, controller.velocity.z);
+        float speed = flatVelocity.magnitude / moveSpeed * 0.6f;
+        anim.SetFloat("Speed", speed, 0.1f, Time.deltaTime);
+
+        // damping never reaches exactly 0, so snap it when it's close enough
+        if (speed < 0.01f && anim.GetFloat("Speed") < 0.01f)
+            anim.SetFloat("Speed", 0);
     }
 }
