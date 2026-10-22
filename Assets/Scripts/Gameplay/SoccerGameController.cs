@@ -23,15 +23,16 @@ public class SoccerGameController : MonoBehaviour
     [Header("Aim Line")]
     [SerializeField] private LineRenderer aimLine;
     [SerializeField] private float aimPreviewDistance = 30f;
-    [SerializeField] private Color readyAimColor = Color.green;
-    [SerializeField] private Color blockedAimColor = Color.red;
+    [SerializeField] private Color aimColor = new Color(1f, 0.85f, 0f, 1f);
+    [SerializeField, Range(0, 1)] private float blockedAimOpacity = 0.3f;
+    [SerializeField] private float lineHeight = 0.02f;
 
     private void Update()
     {
         if (isBallFlying)
         {
             kickButton.SetActive(false);
-            aimLine.enabled = true;
+            aimLine.enabled = false;
             return;
         }
 
@@ -78,7 +79,6 @@ public class SoccerGameController : MonoBehaviour
         kickButton.SetActive(false);
         aimLine.enabled = false;
 
-        // wait for the camera to get behind the ball first
         yield return cameraController.StartFollowingBall(_ball, _target);
 
         Vector3 start = _ball.position;
@@ -130,7 +130,6 @@ public class SoccerGameController : MonoBehaviour
             RaycastHit hit;
             if (goalArea.Raycast(ray, out hit, 100))
             {
-                // only count it if the ball goes in from the front of the goal (goal's blue axis faces the pitch)
                 if (Vector3.Dot(hit.normal, goal.forward) > 0.99f)
                 {
                     float depth = Vector3.Dot(hit.point - goal.position, goal.forward);
@@ -154,20 +153,17 @@ public class SoccerGameController : MonoBehaviour
 
         aimLine.enabled = true;
         aimLine.positionCount = 3;
-        aimLine.SetPosition(0, new Vector3(player.position.x, _ball.position.y, player.position.z));
-        aimLine.SetPosition(1, _ball.position);
-        aimLine.SetPosition(2, _target);
+        float groundY = player.position.y + lineHeight;
+        aimLine.SetPosition(0, new Vector3(player.position.x, groundY, player.position.z));
+        aimLine.SetPosition(1, new Vector3(_ball.position.x, groundY, _ball.position.z));
+        aimLine.SetPosition(2, new Vector3(_target.x, groundY, _target.z));
 
-        if (_canKick)
-        {
-            aimLine.startColor = readyAimColor;
-            aimLine.endColor = readyAimColor;
-        }
-        else
-        {
-            aimLine.startColor = blockedAimColor;
-            aimLine.endColor = blockedAimColor;
-        }
+        Color color = aimColor;
+        if (!_canKick)
+            color.a = blockedAimOpacity;
+
+        aimLine.startColor = color;
+        aimLine.endColor = color;
     }
 
     private Transform GetNearestBall()

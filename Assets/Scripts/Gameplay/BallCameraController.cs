@@ -9,7 +9,7 @@ public class BallCameraController : MonoBehaviour
     [SerializeField] private CinemachineCamera ballCamera;
 
     [Header("Ball Camera")]
-    [SerializeField] private Vector3 ballCameraOffset = new Vector3(-1.25f, 1.6f, -3.5f); // left, up, behind the shot
+    [SerializeField] private Vector3 ballCameraOffset = new Vector3(-1.25f, 1.6f, -3.5f);
     [SerializeField] private float blendTime = 1f;
 
     private CinemachineBrain brain;
@@ -21,7 +21,6 @@ public class BallCameraController : MonoBehaviour
         brain = Camera.main.GetComponent<CinemachineBrain>();
         brain.DefaultBlend = new CinemachineBlendDefinition(CinemachineBlendDefinition.Styles.EaseInOut, blendTime);
 
-        // the ball rolls while flying, so the camera follows this instead (it always faces the shot direction)
         ballCameraTarget = new GameObject("BallCameraTarget").transform;
         ballCameraTarget.SetParent(transform);
 

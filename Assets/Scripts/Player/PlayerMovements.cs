@@ -54,7 +54,6 @@ public class PlayerMovements : MonoBehaviour
         float speed = flatVelocity.magnitude / moveSpeed * 0.6f;
         anim.SetFloat("Speed", speed, 0.1f, Time.deltaTime);
 
-        // damping never reaches exactly 0, so snap it when it's close enough
         if (speed < 0.01f && anim.GetFloat("Speed") < 0.01f)
             anim.SetFloat("Speed", 0);
     }
